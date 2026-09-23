@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  models: read
 
 jobs:
   build-test:
@@ -61,36 +60,30 @@ jobs:
           curl -sf http://localhost:8080/health
 
   ai-summary:
-    name: GenAI Deployment Summary (free, GitHub Models)
+    name: GenAI Deployment Summary (free, Groq)
     needs: build-and-deploy-local
     runs-on: ubuntu-latest
     if: always()
-    permissions:
-      contents: read
-      models: read
     steps:
       - uses: actions/checkout@v4
-      - name: Generate summary via GitHub Models
+      - name: Generate summary via Groq API
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           COMMITS=$(git log -5 --pretty=format:"%h %s")
-          echo "----- VERBOSE CURL DEBUG -----"
-          curl -v https://models.github.ai/inference/chat/completions \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
+          curl -s https://api.groq.com/openai/v1/chat/completions \
+            -H "Authorization: Bearer $GROQ_API_KEY" \
             -H "Content-Type: application/json" \
             -d "$(jq -n --arg commits "$COMMITS" '{
-              model: "openai/gpt-4o-mini",
+              model: "llama-3.1-8b-instant",
               messages: [
                 {role: "system", content: "Summarize this deployment for a release note. Be concise."},
                 {role: "user", content: $commits}
               ]
-            }')" -o raw-response.json 2>curl-debug.log
-          cat curl-debug.log
-          echo "----- RAW BODY -----"
+            }')" > raw-response.json
+          echo "----- RAW API RESPONSE -----"
           cat raw-response.json
-          echo "---------------------"
+          echo "-----------------------------"
           jq -r '.choices[0].message.content' raw-response.json > deployment-summary.md
 
       - name: Post to job summary
