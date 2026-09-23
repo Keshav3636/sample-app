@@ -84,7 +84,7 @@ jobs:
           echo "----- RAW API RESPONSE -----"
           cat raw-response.json
           echo "-----------------------------"
-          jq -r '.choices[0].message.content' raw-response.json > deployment-summary.md
+          jq -r '.choices[0].message.content // "ERROR: " + (.error.message // "unknown error")' raw-response.json > deployment-summary.md
 
       - name: Post to job summary
         run: |
