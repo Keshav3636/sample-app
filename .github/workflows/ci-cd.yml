@@ -90,7 +90,11 @@ jobs:
                 {role: "system", content: "Summarize this deployment for a release note. Be concise."},
                 {role: "user", content: $commits}
               ]
-            }')" | jq -r '.choices[0].message.content' > deployment-summary.md
+            }')" > raw-response.json
+          echo "----- RAW API RESPONSE -----"
+          cat raw-response.json
+          echo "-----------------------------"
+          jq -r '.choices[0].message.content' raw-response.json > deployment-summary.md
 
       - name: Post to job summary
         run: |
