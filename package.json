@@ -1,0 +1,9 @@
+{
+  "name": "sample-app",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"no tests yet - placeholder passing\" && exit 0"
+  },
+  "dependencies": { "express": "^4.19.2" }
+}
