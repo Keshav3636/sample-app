@@ -40,26 +40,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Build Docker image (local only, no push)
         run: docker build -t sample-app:${{ github.sha }} .
-
       - name: Create local Kubernetes cluster (kind)
         uses: helm/kind-action@v1
         with:
           cluster_name: demo-cluster
-
       - name: Load image into kind (no registry needed)
         run: kind load docker-image sample-app:${{ github.sha }} --name demo-cluster
-
       - name: Set image tag and deploy
         run: |
           sed -i "s|PLACEHOLDER_IMAGE|sample-app:${{ github.sha }}|" k8s/deployment.yaml
           kubectl apply -f k8s/
-
       - name: Wait for rollout
         run: kubectl rollout status deployment/sample-app --timeout=120s
-
       - name: Smoke test the deployed service
         run: |
           kubectl port-forward svc/sample-app 8080:80 &
@@ -81,7 +75,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           COMMITS=$(git log -5 --pretty=format:"%h %s")
-          curl -sL https://models.github.ai/inference/chat/completions \
+          echo "----- VERBOSE CURL DEBUG -----"
+          curl -v https://models.github.ai/inference/chat/completions \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             -H "Content-Type: application/json" \
@@ -91,10 +86,11 @@ jobs:
                 {role: "system", content: "Summarize this deployment for a release note. Be concise."},
                 {role: "user", content: $commits}
               ]
-            }')" > raw-response.json
-          echo "----- RAW API RESPONSE -----"
+            }')" -o raw-response.json 2>curl-debug.log
+          cat curl-debug.log
+          echo "----- RAW BODY -----"
           cat raw-response.json
-          echo "-----------------------------"
+          echo "---------------------"
           jq -r '.choices[0].message.content' raw-response.json > deployment-summary.md
 
       - name: Post to job summary
