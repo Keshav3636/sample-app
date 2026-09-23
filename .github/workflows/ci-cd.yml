@@ -81,8 +81,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           COMMITS=$(git log -5 --pretty=format:"%h %s")
-          curl -s https://models.github.ai/inference/chat/completions \
+          curl -sL https://models.github.ai/inference/chat/completions \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
             -H "Content-Type: application/json" \
             -d "$(jq -n --arg commits "$COMMITS" '{
               model: "openai/gpt-4o-mini",
